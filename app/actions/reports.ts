@@ -47,6 +47,16 @@ export async function generateReport(contractId: string) {
     }
   }
 
+  const { data: firmProfile } = await supabase
+    .from('firm_profiles')
+    .select('*')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!firmProfile) {
+    return { error: 'Please complete your firm profile before generating reports.' }
+  }
+
   const { data: contract, error: contractError } = await supabase
     .from('contracts')
     .select('*')
@@ -57,19 +67,29 @@ export async function generateReport(contractId: string) {
     return { error: 'Contract not found.' }
   }
 
-  const prompt = `You are a government contracting analyst. Analyze this federal contract opportunity and produce a win-strategy report.
+  const prompt = `You are a government contracting analyst. Analyze this federal contract opportunity and produce a win-strategy report tailored specifically to the firm described below. Your scoring and recommendations must reflect how well THIS firm fits THIS contract — not a generic assessment.
 
+FIRM PROFILE:
+Company: ${firmProfile.company_name || 'Not specified'}
+Certifications: ${firmProfile.certifications?.length ? firmProfile.certifications.join(', ') : 'None'}
+NAICS codes: ${firmProfile.naics_codes?.length ? firmProfile.naics_codes.join(', ') : 'Not specified'}
+Core capabilities: ${firmProfile.capabilities || 'Not specified'}
+Years in business: ${firmProfile.years_in_business ?? 'Not specified'}
+Team size: ${firmProfile.team_size ?? 'Not specified'}
+Past performance: ${firmProfile.past_performance || 'None provided'}
+
+CONTRACT OPPORTUNITY:
 Contract Title: ${contract.title}
 Agency: ${contract.agency}
 Raw Data: ${JSON.stringify(contract.raw_data)}
 
-Respond ONLY with valid JSON in this exact structure, no markdown, no preamble:
+Using the firm profile above, assess fit and produce a report. certification_match should reflect whether the firm's actual certifications align with likely set-aside requirements for this contract. past_performance_relevance should reflect the firm's stated past performance against what this contract calls for. Respond ONLY with valid JSON in this exact structure, no markdown, no preamble:
 {
   "win_probability": <number 0-100>,
   "go_no_go": "<GO or NO-GO>",
-  "reasoning": "<2-3 sentence explanation>",
+  "reasoning": "<2-3 sentence explanation referencing the firm's specific fit>",
   "competitive_landscape": "<paragraph on likely competition>",
-  "teaming_recommendations": "<paragraph on teaming/subcontracting strategy>",
+  "teaming_recommendations": "<paragraph on teaming/subcontracting strategy given this firm's size and capabilities>",
   "key_risks": ["<risk 1>", "<risk 2>", "<risk 3>"],
   "scoring_factors": {
     "past_performance_relevance": <number 0-100>,

@@ -24,10 +24,21 @@ export default async function DashboardPage({
     .eq('id', user.id)
     .single()
 
-  const { data: contracts } = await supabase
-    .from('contracts')
-    .select('*, reports(id, win_probability, created_at)')
-    .order('created_at', { ascending: false })
+    const { data: firmProfile } = await supabase
+    .from('firm_profiles')
+    .select('id')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!firmProfile) {
+    redirect('/onboarding')
+  }
+
+const { data: contracts } = await supabase
+  .from('contracts')
+  .select('*, reports(id, win_probability, created_at)')
+  .eq('user_id', user.id)
+  .order('created_at', { ascending: false })
 
   async function handleAddContract(formData: FormData) {
     'use server'
