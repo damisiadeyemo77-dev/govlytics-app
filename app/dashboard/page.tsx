@@ -5,6 +5,8 @@ import { addContract } from '@/app/actions/contracts'
 import { generateReport } from '@/app/actions/reports'
 import { createPortalSession } from '@/app/actions/stripe'
 import GenerateReportButton from '@/app/components/GenerateReportButton'
+import AddContractForm from '@/app/components/AddContractForm'
+import SubmitButton from '@/app/components/SubmitButton'
 
 export default async function DashboardPage({
   searchParams,
@@ -98,9 +100,9 @@ export default async function DashboardPage({
           <div className="mb-4 flex items-center justify-between rounded border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning">
             <span>Your last payment failed. Please update your billing info to avoid losing access.</span>
             <form action={handleManageBilling}>
-              <button type="submit" className="ml-4 whitespace-nowrap underline hover:no-underline">
+              <SubmitButton pendingText="Loading..." className="ml-4 whitespace-nowrap underline hover:no-underline">
                 Update billing
-              </button>
+              </SubmitButton>
             </form>
           </div>
         )}
@@ -114,12 +116,12 @@ export default async function DashboardPage({
           </div>
           {tier !== 'free' && (
             <form action={handleManageBilling}>
-              <button
-                type="submit"
+              <SubmitButton
+                pendingText="Loading..."
                 className="rounded border border-border px-3 py-1.5 text-sm text-foreground hover:bg-background"
               >
                 Manage subscription
-              </button>
+              </SubmitButton>
             </form>
           )}
         </div>
@@ -132,21 +134,7 @@ export default async function DashboardPage({
         </p>
       </div>
 
-      <form action={handleAddContract} className="w-full max-w-md space-y-3">
-        <input
-          type="url"
-          name="url"
-          placeholder="https://sam.gov/workspace/contract/opp/.../view"
-          required
-          className="w-full rounded border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted"
-        />
-        <button
-          type="submit"
-          className="w-full rounded bg-accent px-3 py-2 text-white hover:bg-accent-hover"
-        >
-          Add Contract
-        </button>
-      </form>
+      <AddContractForm action={handleAddContract} />
 
       <div className="w-full max-w-2xl space-y-4 px-4">
         {contracts && contracts.length > 0 ? (
