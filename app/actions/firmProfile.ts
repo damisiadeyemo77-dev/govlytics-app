@@ -16,6 +16,12 @@ export async function saveFirmProfile(formData: FormData) {
   const naicsCodes = naicsCodesRaw
     ? naicsCodesRaw.split(',').map((c) => c.trim()).filter(Boolean)
     : []
+
+  const invalidCodes = naicsCodes.filter((code) => !/^\d{6}$/.test(code))
+  if (invalidCodes.length > 0) {
+    return { error: `NAICS codes must be 6-digit numbers. Invalid: ${invalidCodes.join(', ')}` }
+  }
+
   const capabilities = formData.get('capabilities') as string
   const yearsInBusiness = formData.get('years_in_business')
     ? parseInt(formData.get('years_in_business') as string)
