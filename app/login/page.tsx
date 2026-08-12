@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import AuthLayout from '@/app/components/AuthLayout'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -17,10 +19,7 @@ export default function LoginPage() {
     setLoading(true)
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     setLoading(false)
 
@@ -30,13 +29,23 @@ export default function LoginPage() {
     }
 
     router.push('/dashboard')
+    router.refresh()
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4">
-        <h1 className="text-2xl font-bold text-foreground">Log in</h1>
-
+    <AuthLayout
+      title="Log in"
+      subtitle="Welcome back — pick up where you left off."
+      footer={
+        <>
+          Don&apos;t have an account?{' '}
+          <Link href="/signup" className="text-accent hover:underline">
+            Sign up
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleLogin} className="space-y-4">
         {error && <p className="text-sm text-danger">{error}</p>}
 
         <input
@@ -45,7 +54,7 @@ export default function LoginPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full rounded border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted"
+          className="w-full rounded border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted"
         />
 
         <input
@@ -54,7 +63,7 @@ export default function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="w-full rounded border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted"
+          className="w-full rounded border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted"
         />
 
         <button
@@ -65,6 +74,6 @@ export default function LoginPage() {
           {loading ? 'Logging in...' : 'Log in'}
         </button>
       </form>
-    </div>
+    </AuthLayout>
   )
 }

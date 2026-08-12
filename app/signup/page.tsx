@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import AuthLayout from '@/app/components/AuthLayout'
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState('')
@@ -37,10 +39,19 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <form onSubmit={handleSignup} className="w-full max-w-sm space-y-4">
-        <h1 className="text-2xl font-bold text-foreground">Create your account</h1>
-
+    <AuthLayout
+      title="Create your account"
+      subtitle="Start generating tailored win-strategy reports."
+      footer={
+        <>
+          Already have an account?{' '}
+          <Link href="/login" className="text-accent hover:underline">
+            Log in
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSignup} className="space-y-4">
         {error && <p className="text-sm text-danger">{error}</p>}
 
         <input
@@ -49,7 +60,7 @@ export default function SignupPage() {
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           required
-          className="w-full rounded border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted"
+          className="w-full rounded border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted"
         />
 
         <input
@@ -58,7 +69,7 @@ export default function SignupPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full rounded border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted"
+          className="w-full rounded border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted"
         />
 
         <input
@@ -68,7 +79,7 @@ export default function SignupPage() {
           onChange={(e) => setPassword(e.target.value)}
           required
           minLength={6}
-          className="w-full rounded border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted"
+          className="w-full rounded border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted"
         />
 
         <button
@@ -79,6 +90,6 @@ export default function SignupPage() {
           {loading ? 'Creating account...' : 'Sign up'}
         </button>
       </form>
-    </div>
+    </AuthLayout>
   )
 }
