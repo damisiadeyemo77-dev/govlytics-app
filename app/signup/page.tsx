@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import AuthLayout from '@/app/components/AuthLayout'
@@ -12,7 +11,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
+  const [submitted, setSubmitted] = useState(false)
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,7 +35,33 @@ export default function SignupPage() {
       return
     }
 
-    router.push('/onboarding')
+    setSubmitted(true)
+  }
+
+  if (submitted) {
+    return (
+      <AuthLayout
+        title="Check your email"
+        subtitle=""
+        footer={
+          <>
+            Already confirmed?{' '}
+            <Link href="/login" className="text-accent hover:underline">
+              Log in
+            </Link>
+          </>
+        }
+      >
+        <p className="text-sm text-foreground">
+          We sent a confirmation link to <strong>{email}</strong>. Click it to finish
+          setting up your account.
+        </p>
+        <p className="mt-3 text-sm text-muted">
+          Don&apos;t see it? Check your spam folder, or make sure the email address is
+          correct.
+        </p>
+      </AuthLayout>
+    )
   }
 
   return (
