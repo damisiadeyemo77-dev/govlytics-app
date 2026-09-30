@@ -71,6 +71,8 @@ export async function generateReport(contractId: string) {
 
 FIRM PROFILE:
 Company: ${firmProfile.company_name || 'Not specified'}
+Firm description: ${firmProfile.firm_description || 'Not provided'}
+SAM.gov registration: UEI ${firmProfile.uei || 'not provided'}, CAGE code ${firmProfile.cage_code || 'not provided'}
 Certifications: ${firmProfile.certifications?.length ? firmProfile.certifications.join(', ') : 'None'}
 NAICS codes: ${firmProfile.naics_codes?.length ? firmProfile.naics_codes.join(', ') : 'Not specified'}
 Core capabilities: ${firmProfile.capabilities || 'Not specified'}
@@ -83,7 +85,7 @@ Contract Title: ${contract.title}
 Agency: ${contract.agency}
 Raw Data: ${JSON.stringify(contract.raw_data)}
 
-Using the firm profile above, assess fit and produce a report. certification_match should reflect whether the firm's actual certifications align with likely set-aside requirements for this contract. past_performance_relevance should reflect the firm's stated past performance against what this contract calls for. Respond ONLY with valid JSON in this exact structure, no markdown, no preamble:
+Using the firm profile above, assess fit and produce a report. Use the firm description to understand the firm's focus, differentiators, and target market when judging fit and positioning. certification_match should reflect whether the firm's actual certifications align with likely set-aside requirements for this contract. past_performance_relevance should reflect the firm's stated past performance against what this contract calls for. If no UEI is provided, include unconfirmed SAM.gov registration as one of the key risks, since an active registration is required to receive a federal award. Respond ONLY with valid JSON in this exact structure, no markdown, no preamble:
 {
   "win_probability": <number 0-100>,
   "go_no_go": "<GO or NO-GO>",

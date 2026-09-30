@@ -12,9 +12,12 @@ const CERTIFICATION_OPTIONS = [
   { value: 'HUBZone', label: 'HUBZone' },
 ]
 
+const DESCRIPTION_MAX = 2000
+
 export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [descriptionLength, setDescriptionLength] = useState(0)
   const router = useRouter()
 
   const handleSubmit = async (formData: FormData) => {
@@ -53,6 +56,55 @@ export default function OnboardingPage() {
             required
             className="w-full rounded border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted"
           />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm text-muted">Firm description (optional)</label>
+          <textarea
+            name="firm_description"
+            rows={4}
+            maxLength={DESCRIPTION_MAX}
+            onChange={(e) => setDescriptionLength(e.target.value.length)}
+            placeholder="A short overview of your firm: who you serve, what sets you apart, and the kind of work you want to win."
+            className="w-full rounded border border-border bg-surface px-3 py-2 text-foreground placeholder:text-muted"
+          />
+          <p className="mt-1 text-right text-xs text-muted">
+            {descriptionLength.toLocaleString()} / {DESCRIPTION_MAX.toLocaleString()}
+          </p>
+        </div>
+
+        <div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1 block text-sm text-muted">UEI (optional)</label>
+              <input
+                type="text"
+                name="uei"
+                maxLength={12}
+                pattern="[A-Za-z0-9]{12}"
+                title="12 letters or numbers"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="12 characters"
+                className="w-full rounded border border-border bg-surface px-3 py-2 uppercase text-foreground placeholder:normal-case placeholder:text-muted"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm text-muted">CAGE code (optional)</label>
+              <input
+                type="text"
+                name="cage_code"
+                maxLength={5}
+                pattern="[A-Za-z0-9]{5}"
+                title="5 letters or numbers"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="5 characters"
+                className="w-full rounded border border-border bg-surface px-3 py-2 uppercase text-foreground placeholder:normal-case placeholder:text-muted"
+              />
+            </div>
+          </div>
+          <p className="mt-1 text-xs text-muted">Both are listed in your SAM.gov entity registration.</p>
         </div>
 
         <div>
