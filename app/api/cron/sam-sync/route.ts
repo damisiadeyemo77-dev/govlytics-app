@@ -91,7 +91,7 @@ export async function GET(request: Request) {
       saved += rows.length
 
       if (page.opportunities.length < PAGE_SIZE || summary.fetched >= page.totalRecords) break
-      offset += PAGE_SIZE
+      offset += 1 // SAM.gov offset is a page index, not a record count
     }
   }
 
