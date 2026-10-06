@@ -2,6 +2,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -31,22 +32,6 @@ export async function generateReport(contractId: string) {
   const tier = profile?.subscription_tier || 'free'
   const limit = REPORT_LIMITS[tier] ?? REPORT_LIMITS.free
 
-  if (limit !== Infinity) {
-    const startOfMonth = new Date()
-    startOfMonth.setDate(1)
-    startOfMonth.setHours(0, 0, 0, 0)
-
-    const { count } = await supabase
-      .from('reports')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .gte('created_at', startOfMonth.toISOString())
-
-    if ((count ?? 0) >= limit) {
-      return { error: `You've reached your ${tier} plan's limit of ${limit} reports this month. Upgrade your plan to generate more.` }
-    }
-  }
-
   const { data: firmProfile } = await supabase
     .from('firm_profiles')
     .select('*')
@@ -65,6 +50,52 @@ export async function generateReport(contractId: string) {
 
   if (contractError || !contract) {
     return { error: 'Contract not found.' }
+  }
+
+  // Reserve a report slot BEFORE counting. Simultaneous requests each see the
+  // others' reservations, so none can slip past the monthly limit together.
+  const admin = createAdminClient()
+  let usageId: number | null = null
+
+  const releaseSlot = async () => {
+    if (usageId !== null) {
+      await admin.from('report_usage').delete().eq('id', usageId)
+      usageId = null
+    }
+  }
+
+  if (limit !== Infinity) {
+    const now = new Date()
+    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString()
+
+    const { data: usage, error: usageError } = await admin
+      .from('report_usage')
+      .insert({ user_id: user.id })
+      .select('id')
+      .single()
+
+    if (usageError || !usage) {
+      console.error('Failed to reserve report slot:', usageError)
+      return { error: 'Something went wrong. Please try again.' }
+    }
+    usageId = usage.id
+
+    const { count, error: countError } = await admin
+      .from('report_usage')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('created_at', startOfMonth)
+
+    if (countError) {
+      console.error('Failed to count report usage:', countError)
+      await releaseSlot()
+      return { error: 'Something went wrong. Please try again.' }
+    }
+
+    if ((count ?? 0) > limit) {
+      await releaseSlot()
+      return { error: `You've reached your ${tier} plan's limit of ${limit} reports this month. Upgrade your plan to generate more.` }
+    }
   }
 
   const prompt = `You are a government contracting analyst. Analyze this federal contract opportunity and produce a win-strategy report tailored specifically to the firm described below. Your scoring and recommendations must reflect how well THIS firm fits THIS contract — not a generic assessment.
@@ -108,22 +139,30 @@ Using the firm profile above, assess fit and produce a report. Use the firm desc
   "plain_english_summary": "<2-3 sentence casual summary of the opportunity>"
 }`
 
-  const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5',
-    max_tokens: 1500,
-    messages: [{ role: 'user', content: prompt }],
-  })
-
-  const responseText = message.content[0].type === 'text' ? message.content[0].text : ''
+  let responseText = ''
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: prompt }],
+    })
+    const first = message.content[0]
+    responseText = first && first.type === 'text' ? first.text : ''
+  } catch (err) {
+    console.error('Claude API request failed:', err)
+    await releaseSlot()
+    return { error: 'Report generation is temporarily unavailable. Please try again later. This attempt didn\'t count toward your limit.' }
+  }
 
   const cleanedText = responseText.replace(/```json\s*|```\s*/g, '').trim()
 
   let reportData
   try {
     reportData = JSON.parse(cleanedText)
-  } catch (parseError) {
+  } catch {
     console.error('Failed to parse Claude response:', responseText)
-    return { error: 'Failed to parse report response.' }
+    await releaseSlot()
+    return { error: 'Failed to parse report response. This attempt didn\'t count toward your limit.' }
   }
 
   const { data: newReport, error: insertError } = await supabase
@@ -137,9 +176,11 @@ Using the firm profile above, assess fit and produce a report. Use the firm desc
     .select('id')
     .single()
 
-  if (insertError) {
+  if (insertError || !newReport) {
     console.error('Supabase insert error:', insertError)
+    await releaseSlot()
     return { error: 'Failed to save report.' }
   }
+
   return { reportId: newReport.id }
 }
